@@ -18,9 +18,10 @@ def evaluate_models():
     for model_tag in models:
         cand_paths = [
             Path(f"runs/detect/{model_tag}/weights/best.pt"),
+            Path(f"runs/detect/runs/detect/{model_tag}/weights/best.pt"),
             Path(f"backup/{model_tag}/best.pt"),
             Path(f"checkpoints/{model_tag}/best.pt"),
-        ]
+        ] + list(Path("runs").rglob(f"*{model_tag}*/weights/best.pt")) + list(Path("backup").rglob(f"*{model_tag}*/best.pt"))
         best_pt = None
         for p in cand_paths:
             if p.exists():

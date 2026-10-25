@@ -13,14 +13,18 @@ def main():
 
     model_path = args.model
     if not model_path:
-        for cand in [
-            "backup/yolo26s/best.pt",
+        cand_list = [
             "runs/detect/yolo26s/weights/best.pt",
-            "backup/yolo26m/best.pt",
+            "runs/detect/runs/detect/yolo26s/weights/best.pt",
+            "backup/yolo26s/best.pt",
             "runs/detect/yolo26m/weights/best.pt",
-            "backup/yolo26n/best.pt",
+            "runs/detect/runs/detect/yolo26m/weights/best.pt",
+            "backup/yolo26m/best.pt",
             "runs/detect/yolo26n/weights/best.pt",
-        ]:
+            "runs/detect/runs/detect/yolo26n/weights/best.pt",
+            "backup/yolo26n/best.pt",
+        ] + [str(p) for p in Path("runs").rglob("best.pt")] + [str(p) for p in Path("backup").rglob("best.pt")]
+        for cand in cand_list:
             if Path(cand).exists():
                 model_path = cand
                 break
