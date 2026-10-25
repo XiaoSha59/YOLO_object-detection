@@ -1,0 +1,6 @@
+﻿ultralytics>=8.4.0
+roboflow
+python-dotenv
+matplotlib
+pandas
+pyyaml
