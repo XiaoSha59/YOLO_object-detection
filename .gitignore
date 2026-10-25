@@ -13,3 +13,9 @@ metrics/*.csv
 *.ipynb
 temp_out*
 *.cache
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+missfont.log
