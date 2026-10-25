@@ -132,7 +132,14 @@ def main():
                 exist_ok=True
             )
 
-        run_dir = Path(run_project) / tag
+        if hasattr(model, "trainer") and hasattr(model.trainer, "save_dir") and model.trainer.save_dir:
+            run_dir = Path(model.trainer.save_dir)
+        elif 'results' in locals() and hasattr(results, "save_dir") and results.save_dir:
+            run_dir = Path(results.save_dir)
+        else:
+            nested = Path("runs/detect") / run_project / tag
+            run_dir = nested if nested.exists() else Path(run_project) / tag
+
         backup_model_run(run_dir, tag)
 
     print("\n[SUCCESS] Training pipeline completed successfully.")
