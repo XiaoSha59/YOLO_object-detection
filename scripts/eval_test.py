@@ -8,7 +8,7 @@ def evaluate_models():
     metrics_dir = Path("metrics")
     metrics_dir.mkdir(parents=True, exist_ok=True)
 
-    models = ["yolo26n", "yolo26s", "yolo26m"]
+    models = ["yolo26n", "yolo26s", "yolo26m", "yolo26l", "yolo26x"]
     rows = []
 
     print("=" * 65)

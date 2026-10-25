@@ -38,7 +38,7 @@ def backup_model_run(run_dir, model_name, backup_root=Path("backup")):
 def main():
     parser = argparse.ArgumentParser(description="YOLO26 BCCD v3 Training Pipeline")
     parser.add_argument("--smoke-test", action="store_true", help="Run 1-epoch smoke test with YOLO26m to verify VRAM")
-    parser.add_argument("--model", type=str, default="all", choices=["all", "yolo26n", "yolo26s", "yolo26m"], help="Select specific model to train")
+    parser.add_argument("--model", type=str, default="all", choices=["all", "yolo26n", "yolo26s", "yolo26m", "yolo26l", "yolo26x"], help="Select specific model to train")
     parser.add_argument("--resume", action="store_true", help="Resume training from last.pt checkpoint")
     parser.add_argument("--batch", type=int, default=None, help="Override batch size from train.yaml")
     parser.add_argument("--epochs", type=int, default=None, help="Override epoch count")
@@ -81,7 +81,9 @@ def main():
     all_models = [
         ("yolo26n", "yolo26n.pt"),
         ("yolo26s", "yolo26s.pt"),
-        ("yolo26m", "yolo26m.pt")
+        ("yolo26m", "yolo26m.pt"),
+        ("yolo26l", "yolo26l.pt"),
+        ("yolo26x", "yolo26x.pt")
     ]
 
     if args.model != "all":
