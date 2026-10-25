@@ -4,6 +4,15 @@ A complete pipeline for detecting and counting blood cells (Platelets, RBC, WBC)
 
 ---
 
+## 🔗 Official References & Links
+
+* **Ultralytics Documentation**: [https://docs.ultralytics.com](https://docs.ultralytics.com/)
+* **Ultralytics YOLO26 Model Guide**: [https://docs.ultralytics.com/models/yolo26/](https://docs.ultralytics.com/models/yolo26/)
+* **Ultralytics GitHub Repository**: [https://github.com/ultralytics/ultralytics](https://github.com/ultralytics/ultralytics)
+* **BCCD v3 Dataset (Roboflow Universe)**: [https://universe.roboflow.com/joseph-nelson/bccd/dataset/3](https://universe.roboflow.com/joseph-nelson/bccd/dataset/3)
+
+---
+
 ## 📁 Directory Structure
 
 ```text
@@ -61,14 +70,15 @@ pip install -r requirements.txt
 
 ## 📊 Dataset Setup (BCCD v3)
 
-The dataset is partitioned into official fixed splits:
-* **Train**: 255 images (3,450 boxes)
-* **Valid**: 73 images (967 boxes)
-* **Test**: 36 images (471 boxes)
-* **Total**: 364 images across 3 classes:
-  * `0`: **Platelets** (361 boxes)
-  * `1`: **RBC** (4,155 boxes)
-  * `2`: **WBC** (372 boxes)
+* **Source**: [BCCD v3 on Roboflow Universe](https://universe.roboflow.com/joseph-nelson/bccd/dataset/3)
+* **Partitions**:
+  * **Train**: 255 images (3,450 boxes)
+  * **Valid**: 73 images (967 boxes)
+  * **Test**: 36 images (471 boxes)
+  * **Total**: 364 images across 3 classes:
+    * `0`: **Platelets** (361 boxes)
+    * `1`: **RBC** (4,155 boxes)
+    * `2`: **WBC** (372 boxes)
 
 To verify dataset integrity and generate a 12-sample preview (`figures/dataset_samples.png`):
 ```bash
@@ -79,7 +89,7 @@ python scripts/check_dataset.py
 
 ## 🚀 Ultralytics YOLO26 Workflow
 
-YOLO26 introduces native end-to-end NMS-free inference and removes Distribution Focal Loss (DFL) for improved edge and GPU efficiency.
+[YOLO26](https://docs.ultralytics.com/models/yolo26/) introduces native end-to-end NMS-free inference and removes Distribution Focal Loss (DFL) for improved edge and GPU efficiency.
 
 ### 1. Smoke Test (VRAM & Pipeline Check)
 Run a quick 1-epoch smoke test with `yolo26m` before starting full training:
@@ -90,9 +100,15 @@ python scripts/train.py --smoke-test
 ### 2. Full Training (Sequential $n \rightarrow s \rightarrow m$)
 Train all three models sequentially with locked hyperparameters (`AdamW`, $lr_0=0.001$, `batch=8`, `epochs=40`):
 ```bash
+# Train all models sequentially:
 python scripts/train.py
+
+# Or train models individually:
+python scripts/train.py --model yolo26n
+python scripts/train.py --model yolo26s
+python scripts/train.py --model yolo26m
 ```
-> **Note**: After each model finishes, weights (`best.pt`), training curves, and `results.csv` are automatically archived into `backup/` and compressed to `backup.zip`.
+> **Note**: After each model finishes, weights (`best.pt`), training curves, and `results.csv` are automatically archived into `backup/` and compressed to `backup.zip`. If interrupted, resume with `python scripts/train.py --model <name> --resume`.
 
 ### 3. Test Set Evaluation
 Evaluate all trained models on the test set (`conf=0.001`):
