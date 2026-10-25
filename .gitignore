@@ -8,3 +8,6 @@ backup/
 datasets/bccd/*.zip
 metrics/*.csv
 *plan.md
+*kaggle*
+*access_token*
+*.ipynb
