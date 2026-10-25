@@ -32,13 +32,11 @@ Tập dữ liệu BCCD v3 gốc được chia theo tỷ lệ chuẩn:
 
 ### 4.1. Bảng so sánh hiệu năng trên Tập Test (conf=0.001)
 
-| Mô hình | Kích thước (MB) | Epochs dừng | Precision | Recall | mAP50 | mAP50-95 | AP50 (Platelets) | AP50 (RBC) | AP50 (WBC) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **YOLO26n** | ~6.0 MB |  |  |  |  |  |  |  |  |
-| **YOLO26s** | ~22.5 MB |  |  |  |  |  |  |  |  |
-| **YOLO26m** | ~43.0 MB |  |  |  |  |  |  |  |  |
-
-*(Số liệu sẽ được cập nhật tự động từ `metrics/comparison_test.csv` sau khi chạy `scripts/eval_test.py`)*.
+| Mô hình | Kích thước (MB) | Precision | Recall | mAP50 | mAP50-95 | AP50 (Platelets) | AP50 (RBC) | AP50 (WBC) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **YOLO26n** | 5.19 MB | 0.8188 | 0.9320 | 0.9089 | 0.6147 | 0.4282 | 0.6324 | 0.7836 |
+| **YOLO26s** | 19.36 MB | 0.8679 | 0.8673 | 0.9163 | 0.6247 | 0.4302 | 0.6567 | 0.7872 |
+| **YOLO26m** | 41.97 MB | 0.8167 | 0.9043 | 0.9027 | 0.6210 | 0.4668 | 0.6236 | 0.7726 |
 
 ### 4.2. Trực quan hóa kết quả đếm tế bào
 

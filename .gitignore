@@ -12,3 +12,4 @@ metrics/*.csv
 *access_token*
 *.ipynb
 temp_out*
+*.cache
