@@ -1,17 +1,10 @@
 import os
-import sys
 import shutil
 import argparse
 from pathlib import Path
 import yaml
 import zipfile
 from ultralytics import YOLO
-
-if sys.stdout.encoding.lower() != 'utf-8':
-    try:
-        sys.stdout.reconfigure(encoding='utf-8')
-    except Exception:
-        pass
 
 def load_yaml(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -31,9 +24,8 @@ def backup_model_run(run_dir, model_name, backup_root=Path("backup")):
             shutil.copy2(src, dst)
             copied.append(Path(f).name)
 
-    print(f"📦 Đã sao lưu {copied} của {model_name} vào: {dest_dir}")
+    print(f"[BACKUP] Copied artifacts {copied} for {model_name} to {dest_dir}")
 
-    # Tạo file zip tổng hợp
     zip_path = Path("backup.zip")
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(backup_root):
@@ -41,25 +33,24 @@ def backup_model_run(run_dir, model_name, backup_root=Path("backup")):
                 file_path = Path(root) / file
                 arcname = file_path.relative_to(backup_root.parent)
                 zipf.write(file_path, arcname)
-    print(f"🗜️ Đã cập nhật file nén sao lưu: {zip_path.resolve()} ({zip_path.stat().st_size / 1024:.1f} KB)")
+    print(f"[BACKUP] Updated backup archive: {zip_path.resolve()} ({zip_path.stat().st_size / 1024:.1f} KB)")
 
 def main():
-    parser = argparse.ArgumentParser(description="Huấn luyện YOLO26 trên BCCD v3")
-    parser.add_argument("--smoke-test", action="store_true", help="Chạy thử nghiệm 1 epoch với YOLO26m để kiểm tra VRAM")
-    parser.add_argument("--model", type=str, default="all", choices=["all", "yolo26n", "yolo26s", "yolo26m"], help="Chọn mô hình cụ thể để train (yolo26n, yolo26s, yolo26m hoặc all)")
-    parser.add_argument("--resume", action="store_true", help="Tiếp tục huấn luyện từ checkpoint last.pt nếu bị ngắt")
-    parser.add_argument("--batch", type=int, default=None, help="Ghi đè batch size (mặc định theo train.yaml)")
-    parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs")
-    parser.add_argument("--device", default=None, help="Device (0 hoặc cpu)")
+    parser = argparse.ArgumentParser(description="YOLO26 BCCD v3 Training Pipeline")
+    parser.add_argument("--smoke-test", action="store_true", help="Run 1-epoch smoke test with YOLO26m to verify VRAM")
+    parser.add_argument("--model", type=str, default="all", choices=["all", "yolo26n", "yolo26s", "yolo26m"], help="Select specific model to train")
+    parser.add_argument("--resume", action="store_true", help="Resume training from last.pt checkpoint")
+    parser.add_argument("--batch", type=int, default=None, help="Override batch size from train.yaml")
+    parser.add_argument("--epochs", type=int, default=None, help="Override epoch count")
+    parser.add_argument("--device", default=None, help="Device ID (e.g. 0 or cpu)")
     args = parser.parse_args()
 
     config_path = Path("configs/train.yaml")
     if not config_path.exists():
-        raise FileNotFoundError("Không tìm thấy file configs/train.yaml!")
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     cfg = load_yaml(config_path)
 
-    # Override nếu có tham số từ dòng lệnh
     if args.batch is not None:
         cfg["batch"] = args.batch
     if args.epochs is not None:
@@ -69,11 +60,11 @@ def main():
 
     # Smoke test mode
     if args.smoke_test:
-        print("\n" + "=" * 60)
-        print("🚀 BẮT ĐẦU SMOKE TEST: YOLO26m (1 epoch)")
-        print("=" * 60)
+        print("=" * 65)
+        print("[SMOKE TEST] Initializing YOLO26m (1 epoch VRAM check)")
+        print("=" * 65)
         smoke_model = YOLO("yolo26m.pt")
-        smoke_res = smoke_model.train(
+        smoke_model.train(
             data=cfg["data"],
             epochs=1,
             imgsz=cfg.get("imgsz", 640),
@@ -84,10 +75,9 @@ def main():
             exist_ok=True,
             amp=cfg.get("amp", True)
         )
-        print("\n✅ SMOKE TEST THÀNH CÔNG! Sẵn sàng train.")
+        print("[SUCCESS] Smoke test completed successfully. Ready for full training.")
         return
 
-    # Select models to train
     all_models = [
         ("yolo26n", "yolo26n.pt"),
         ("yolo26s", "yolo26s.pt"),
@@ -99,29 +89,29 @@ def main():
     else:
         models_to_train = all_models
 
-    print("\n" + "=" * 60)
-    print(f"🎯 BẮT ĐẦU HUẤN LUYỆN: {[m[0] for m in models_to_train]}")
-    print(f"⚙️ Config: epochs={cfg['epochs']}, batch={cfg['batch']}, imgsz={cfg['imgsz']}, optimizer={cfg['optimizer']}")
-    print("=" * 60)
+    print("=" * 65)
+    print(f"[TRAINING] Target models: {[m[0] for m in models_to_train]}")
+    print(f"[TRAINING] Config: epochs={cfg['epochs']}, batch={cfg['batch']}, imgsz={cfg['imgsz']}, optimizer={cfg['optimizer']}")
+    print("=" * 65)
 
     for tag, weight_name in models_to_train:
-        print(f"\n▶️ Đang huấn luyện mô hình: {tag}...")
+        print(f"\n[INFO] Starting training for: {tag}...")
         run_project = "runs/detect"
         last_ckpt = Path(run_project) / tag / "weights" / "last.pt"
 
         if args.resume and last_ckpt.exists():
-            print(f"🔄 Phát hiện checkpoint ngắt quãng: {last_ckpt}. Tiếp tục huấn luyện (resume=True)...")
+            print(f"[INFO] Found interrupted checkpoint at {last_ckpt}. Resuming training...")
             model = YOLO(str(last_ckpt))
-            results = model.train(resume=True)
+            model.train(resume=True)
         else:
             try:
                 model = YOLO(weight_name)
-            except Exception as e:
+            except Exception:
                 fallback_name = weight_name.replace("yolo26", "yolov26")
-                print(f"⚠️ Thử tải fallback: {fallback_name}...")
+                print(f"[WARNING] Weight {weight_name} not found. Trying fallback {fallback_name}...")
                 model = YOLO(fallback_name)
 
-            results = model.train(
+            model.train(
                 data=cfg["data"],
                 epochs=cfg["epochs"],
                 patience=cfg.get("patience", 10),
@@ -142,11 +132,10 @@ def main():
                 exist_ok=True
             )
 
-
         run_dir = Path(run_project) / tag
         backup_model_run(run_dir, tag)
 
-    print("\n🎉 HOÀN TẤT HUẤN LUYỆN TOÀN BỘ 3 MÔ HÌNH!")
+    print("\n[SUCCESS] Training pipeline completed successfully.")
 
 if __name__ == "__main__":
     main()

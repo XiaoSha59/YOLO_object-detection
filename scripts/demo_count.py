@@ -1,25 +1,16 @@
-import sys
-import os
 import argparse
 from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 from ultralytics import YOLO
 
-if sys.stdout.encoding.lower() != 'utf-8':
-    try:
-        sys.stdout.reconfigure(encoding='utf-8')
-    except Exception:
-        pass
-
 def main():
-    parser = argparse.ArgumentParser(description="Demo đếm tế bào máu trên ảnh test với YOLO26")
-    parser.add_argument("--image", default=None, help="Đường dẫn file ảnh (mặc định lấy ảnh đầu tiên trong test/images)")
-    parser.add_argument("--model", default=None, help="Đường dẫn checkpoint best.pt")
-    parser.add_argument("--conf", type=float, default=0.25, help="Ngưỡng confidence (mặc định: 0.25)")
+    parser = argparse.ArgumentParser(description="Blood cell detection and counting demo on BCCD test set")
+    parser.add_argument("--image", default=None, help="Path to input test image")
+    parser.add_argument("--model", default=None, help="Path to best.pt checkpoint")
+    parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold (default: 0.25)")
     args = parser.parse_args()
 
-    # Tìm model
     model_path = args.model
     if not model_path:
         for cand in [
@@ -35,20 +26,19 @@ def main():
                 break
 
     if not model_path or not Path(model_path).exists():
-        print(f"⚠️ Chưa tìm thấy checkpoint best.pt! Hãy huấn luyện xong hoặc chỉ định qua --model.")
+        print("[WARNING] Checkpoint best.pt not found. Please provide path via --model.")
         return
 
-    # Tìm ảnh
     image_path = args.image
     if not image_path:
         test_images = sorted(list(Path("datasets/bccd/test/images").glob("*.jpg")) + list(Path("datasets/bccd/test/images").glob("*.png")))
         if not test_images:
-            print("❌ Không tìm thấy ảnh trong datasets/bccd/test/images!")
+            print("[ERROR] No images found in datasets/bccd/test/images.")
             return
         image_path = str(test_images[0])
 
-    print(f"🔬 Đang chạy demo đếm tế bào với mô hình: {model_path}")
-    print(f"🖼️ Ảnh đầu vào: {image_path} (conf={args.conf})")
+    print(f"[INFO] Running cell counting inference with model: {model_path}")
+    print(f"[INFO] Input image: {image_path} (confidence threshold: {args.conf})")
 
     model = YOLO(model_path)
     results = model.predict(image_path, conf=args.conf, save=False)
@@ -64,15 +54,14 @@ def main():
             counts[cls_int] = counts.get(cls_int, 0) + 1
 
     print("\n" + "=" * 50)
-    print("🩸 KẾT QUẢ ĐẾM TẾ BÀO MÁU:")
-    print(f"   - Hồng cầu (RBC):       {counts.get(1, 0)} tế bào")
-    print(f"   - Bạch cầu (WBC):       {counts.get(2, 0)} tế bào")
-    print(f"   - Tiểu cầu (Platelets): {counts.get(0, 0)} tế bào")
-    print(f"   👉 TỔNG CỘNG:           {sum(counts.values())} tế bào")
+    print("CELL COUNTING SUMMARY:")
+    print(f"  - Red Blood Cells (RBC):     {counts.get(1, 0)}")
+    print(f"  - White Blood Cells (WBC):   {counts.get(2, 0)}")
+    print(f"  - Platelets:                 {counts.get(0, 0)}")
+    print(f"  - TOTAL DETECTED CELLS:      {sum(counts.values())}")
     print("=" * 50)
 
-    # Vẽ và lưu ảnh kết quả
-    annotated_img = res.plot() # BGR image from Ultralytics
+    annotated_img = res.plot()
     annotated_rgb = cv2.cvtColor(annotated_img, cv2.COLOR_BGR2RGB)
 
     output_dir = Path("figures")
@@ -82,13 +71,13 @@ def main():
     plt.figure(figsize=(10, 8))
     plt.imshow(annotated_rgb)
     title_text = f"BCCD Blood Cell Counting (YOLO26)\nRBC: {counts.get(1, 0)} | WBC: {counts.get(2, 0)} | Platelets: {counts.get(0, 0)}"
-    plt.title(title_text, fontsize=13, fontweight='bold', pad=10)
+    plt.title(title_text, fontsize=12, fontweight='bold', pad=10)
     plt.axis("off")
     plt.tight_layout()
     plt.savefig(out_path, dpi=200)
     plt.close()
 
-    print(f"\n✅ Đã lưu ảnh trực quan kết quả đếm vào: {out_path}")
+    print(f"[SUCCESS] Visualized prediction saved to: {out_path}")
 
 if __name__ == "__main__":
     main()
