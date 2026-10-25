@@ -46,6 +46,8 @@ def backup_model_run(run_dir, model_name, backup_root=Path("backup")):
 def main():
     parser = argparse.ArgumentParser(description="Huấn luyện YOLO26 trên BCCD v3")
     parser.add_argument("--smoke-test", action="store_true", help="Chạy thử nghiệm 1 epoch với YOLO26m để kiểm tra VRAM")
+    parser.add_argument("--model", type=str, default="all", choices=["all", "yolo26n", "yolo26s", "yolo26m"], help="Chọn mô hình cụ thể để train (yolo26n, yolo26s, yolo26m hoặc all)")
+    parser.add_argument("--resume", action="store_true", help="Tiếp tục huấn luyện từ checkpoint last.pt nếu bị ngắt")
     parser.add_argument("--batch", type=int, default=None, help="Ghi đè batch size (mặc định theo train.yaml)")
     parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs")
     parser.add_argument("--device", default=None, help="Device (0 hoặc cpu)")
@@ -82,52 +84,64 @@ def main():
             exist_ok=True,
             amp=cfg.get("amp", True)
         )
-        print("\n✅ SMOKE TEST THÀNH CÔNG! Sẵn sàng train toàn bộ 3 model.")
+        print("\n✅ SMOKE TEST THÀNH CÔNG! Sẵn sàng train.")
         return
 
-    # Full training pipeline: n -> s -> m
-    models_to_train = [
+    # Select models to train
+    all_models = [
         ("yolo26n", "yolo26n.pt"),
         ("yolo26s", "yolo26s.pt"),
         ("yolo26m", "yolo26m.pt")
     ]
 
+    if args.model != "all":
+        models_to_train = [m for m in all_models if m[0] == args.model]
+    else:
+        models_to_train = all_models
+
     print("\n" + "=" * 60)
-    print("🎯 BẮT ĐẦU HUẤN LUYỆN CHÍNH THỨC: YOLO26n -> YOLO26s -> YOLO26m")
+    print(f"🎯 BẮT ĐẦU HUẤN LUYỆN: {[m[0] for m in models_to_train]}")
     print(f"⚙️ Config: epochs={cfg['epochs']}, batch={cfg['batch']}, imgsz={cfg['imgsz']}, optimizer={cfg['optimizer']}")
     print("=" * 60)
 
     for tag, weight_name in models_to_train:
-        print(f"\n▶️ Đang huấn luyện mô hình: {tag} ({weight_name})...")
-        try:
-            model = YOLO(weight_name)
-        except Exception as e:
-            # Fallback nếu tên checkpoint có dạng yolov26n.pt
-            fallback_name = weight_name.replace("yolo26", "yolov26")
-            print(f"⚠️ Thử tải fallback: {fallback_name}...")
-            model = YOLO(fallback_name)
-
+        print(f"\n▶️ Đang huấn luyện mô hình: {tag}...")
         run_project = "runs/detect"
-        results = model.train(
-            data=cfg["data"],
-            epochs=cfg["epochs"],
-            patience=cfg.get("patience", 10),
-            imgsz=cfg["imgsz"],
-            batch=cfg["batch"],
-            optimizer=cfg.get("optimizer", "AdamW"),
-            lr0=cfg.get("lr0", 0.001),
-            weight_decay=cfg.get("weight_decay", 0.0005),
-            seed=cfg.get("seed", 42),
-            deterministic=cfg.get("deterministic", True),
-            amp=cfg.get("amp", True),
-            workers=cfg.get("workers", 2),
-            close_mosaic=cfg.get("close_mosaic", 5),
-            cache=cfg.get("cache", "ram"),
-            device=cfg.get("device", 0),
-            project=run_project,
-            name=tag,
-            exist_ok=True
-        )
+        last_ckpt = Path(run_project) / tag / "weights" / "last.pt"
+
+        if args.resume and last_ckpt.exists():
+            print(f"🔄 Phát hiện checkpoint ngắt quãng: {last_ckpt}. Tiếp tục huấn luyện (resume=True)...")
+            model = YOLO(str(last_ckpt))
+            results = model.train(resume=True)
+        else:
+            try:
+                model = YOLO(weight_name)
+            except Exception as e:
+                fallback_name = weight_name.replace("yolo26", "yolov26")
+                print(f"⚠️ Thử tải fallback: {fallback_name}...")
+                model = YOLO(fallback_name)
+
+            results = model.train(
+                data=cfg["data"],
+                epochs=cfg["epochs"],
+                patience=cfg.get("patience", 10),
+                imgsz=cfg["imgsz"],
+                batch=cfg["batch"],
+                optimizer=cfg.get("optimizer", "AdamW"),
+                lr0=cfg.get("lr0", 0.001),
+                weight_decay=cfg.get("weight_decay", 0.0005),
+                seed=cfg.get("seed", 42),
+                deterministic=cfg.get("deterministic", True),
+                amp=cfg.get("amp", True),
+                workers=cfg.get("workers", 2),
+                close_mosaic=cfg.get("close_mosaic", 5),
+                cache=cfg.get("cache", "ram"),
+                device=cfg.get("device", 0),
+                project=run_project,
+                name=tag,
+                exist_ok=True
+            )
+
 
         run_dir = Path(run_project) / tag
         backup_model_run(run_dir, tag)
