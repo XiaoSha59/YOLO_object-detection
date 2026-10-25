@@ -1,0 +1,10 @@
+.venv/
+.env
+*.pt
+runs/
+__pycache__/
+.ipynb_checkpoints/
+backup/
+datasets/bccd/*.zip
+metrics/*.csv
+*plan.md
