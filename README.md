@@ -25,17 +25,17 @@ YOLO_object-detection/
 │       ├── train/          # images/ and labels/
 │       ├── valid/          # images/ and labels/
 │       └── test/           # images/ and labels/
-├── figures/                # Visualizations and sample predictions
-├── metrics/                # CSV outputs from evaluation runs
-├── report/
-│   └── report.md           # Experiment analysis and performance report
+├── figures/                # Visualizations, training curves, and authentic execution logs
+├── kaggle_output/
+│   └── yolo26-object-detection.ipynb  # Interactive execution notebook on Kaggle GPU
 ├── scripts/
-│   ├── download_data.py    # Fetch BCCD v3 via Roboflow API
-│   ├── check_dataset.py    # Validate split counts and box integrity
-│   ├── train.py            # Sequential training (n -> s -> m) & auto-backup
+│   ├── check_dataset.py    # Validate split counts, no leakage, box bounds & preview
+│   ├── train.py            # Sequential training across 5 scales (n, s, m, l, x) & auto-backup
 │   ├── eval_test.py        # Benchmark on test set (conf=0.001)
-│   └── demo_count.py       # Cell counting visualization (conf=0.25)
-├── .gitignore              # Ignores .venv, .env, *.pt, *plan.md
+│   ├── demo_count.py       # Cell counting visualization (conf=0.25)
+│   ├── download_data.py    # Optional: fetch BCCD v3 via Roboflow API
+│   └── parse_results.py    # Summary parser for training logs
+├── .gitignore              # Ignores .venv, .env, *.pt, runs/, backup/, and local report files
 ├── requirements.txt        # Pinned dependencies (ultralytics>=8.4.0)
 └── README.md
 ```
@@ -117,7 +117,7 @@ Evaluate all trained models on the held-out test split (`conf=0.001`):
 ```bash
 python scripts/eval_test.py
 ```
-Outputs precision, recall, mAP50, mAP50-95, and class-specific APs to `metrics/comparison_test.csv`.
+Outputs precision, recall, mAP50, mAP50-95, and class-specific APs directly to the console and saves locally.
 
 ### 4. Cell Counting Demo
 Run detection and differential cell counting on test images (`conf=0.25`):
@@ -125,6 +125,12 @@ Run detection and differential cell counting on test images (`conf=0.25`):
 python scripts/demo_count.py
 ```
 Saves annotated cell counts and tally banners to `figures/demo_counting.png`.
+
+### 5. Reproduce on Kaggle GPU
+To reproduce all experiments in the cloud with an NVIDIA Tesla T4 GPU:
+1. Open [Kaggle](https://www.kaggle.com/) and create a new notebook (set Accelerator to **GPU T4**).
+2. Select **File → Import Notebook** and upload [`kaggle_output/yolo26-object-detection.ipynb`](kaggle_output/yolo26-object-detection.ipynb).
+3. Run all cells sequentially. The notebook audits the dataset, trains all five model scales, benchmarks them on the unseen test split, and generates the differential cell counting demonstration.
 
 ---
 
